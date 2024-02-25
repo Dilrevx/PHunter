@@ -54,7 +54,6 @@ public class PatchPresentTest_new {
         }
     }
 
-
     public boolean startMatchMethod(PatchSummary summary, APKAnalyzer apk) {
         for (ClassAttr appClass : apk.allClasses.values()) {
             for (Map.Entry<ClassAttr, Set<MarkedMethod>> classMethodEntry : summary.patchRelatedMethods.entrySet()) {
@@ -82,8 +81,8 @@ public class PatchPresentTest_new {
                     "the target method may be deleted by obfuscator.", apk.getAPKName()));
             logger.info("the patch IS NOT PRESENT");
 
-//            if (config.isEnableDebugLevel())
-//                logger.info(String.format("cve:%s", summary.getCVENumber()));
+            // if (config.isEnableDebugLevel())
+            // logger.info(String.format("cve:%s", summary.getCVENumber()));
             return false;
         }
         return true;
@@ -98,20 +97,18 @@ public class PatchPresentTest_new {
 
         // TODO 如果某个类只改了cinit，有匹配很多很多的类
         for (MarkedMethod anchorMethod : anchorMethods) {
-//            if (anchorMethod.isPre && anchorMethod.state == PatchState.Modified)
-//                continue;
+            // if (anchorMethod.isPre && anchorMethod.state == PatchState.Modified)
+            // continue;
             for (MethodAttr appMethod : appClass.methods) {
                 boolean isAppMethodClinit = appMethod.subSignature.equals("void <clinit>()");
                 boolean isAppMethodInit = appMethod.subSignature.contains("<init>");
 
-                if (anchorMethod.m.subSignature.equals("void <clinit>()")
-                        != isAppMethodClinit
-                        || anchorMethod.m.subSignature.contains("<init>")
-                        != isAppMethodInit)
+                if (anchorMethod.m.subSignature.equals("void <clinit>()") != isAppMethodClinit
+                        || anchorMethod.m.subSignature.contains("<init>") != isAppMethodInit)
                     continue;
                 double sim = SimilarityUtil.matchedMethod(anchorMethod.m, appMethod);
                 if (sim > methodSimilarityThreshold) {
-                    //TODO check a match <init> is a Sufficient conditions
+                    // TODO check a match <init> is a Sufficient conditions
                     if (!anchorMethod.m.subSignature.contains("<init>")) {
                         Map<MethodAttr, MarkedMethod> pairs = checkConstructMatcher(anchorMethod, appClass);
                         if (!pairs.isEmpty())
@@ -131,7 +128,7 @@ public class PatchPresentTest_new {
             tmpMap = null; // no method in an app class match the target
             return;
         }
-//        candidateMatchedMethods.putAll(tmpMap);
+        // candidateMatchedMethods.putAll(tmpMap);
         for (Map.Entry<MarkedMethod, List<MarkedMethod>> entry : tmpMap.entrySet()) {
             candidateMatchedMethods.putIfAbsent(entry.getKey(), new HashSet<>());
             candidateMatchedMethods.get(entry.getKey()).addAll(entry.getValue());
@@ -162,13 +159,13 @@ public class PatchPresentTest_new {
     }
 
     /*
-    compute method similarity
+     * compute method similarity
      */
     private void doSimilarityCompute(PatchSummary summary) {
         Map<MarkedMethod, MethodDigest> accessedMethod = new HashMap<>();
         for (Set<MarkedMethod> patchRelatedMethods : summary.patchRelatedMethods.values()) {
             for (MarkedMethod patchRelatedMethod : patchRelatedMethods) {
-//                System.out.println("1 "+patchRelatedMethod.m.signature);
+                // System.out.println("1 "+patchRelatedMethod.m.signature);
                 MethodDigest tpl = new MethodDigest(patchRelatedMethod.m.body,
                         patchRelatedMethod.patchRelatedLines);
                 Set<MarkedMethod> appMethods = candidateMatchedMethods.get(patchRelatedMethod);
@@ -177,7 +174,7 @@ public class PatchPresentTest_new {
                 float max = -1;
                 MarkedMethod optimalPair = null;
                 for (MarkedMethod appMethod : appMethods) {
-//                    System.out.println("2 "+appMethod.m.signature);
+                    // System.out.println("2 "+appMethod.m.signature);
                     MethodDigest app;
                     if (!accessedMethod.containsKey(appMethod)) {
                         app = new MethodDigest(appMethod.m.body, null);
@@ -203,7 +200,8 @@ public class PatchPresentTest_new {
                     } else {
                         appMethod.postFineGrainSimilarity = sim;
                     }
-//                    System.out.println("sim " + sim + " " + patchRelatedMethod.isPre + " " + patchRelatedMethod.m.signature + " " + appMethod.m.signature);
+                    // System.out.println("sim " + sim + " " + patchRelatedMethod.isPre + " " +
+                    // patchRelatedMethod.m.signature + " " + appMethod.m.signature);
                     if (sim > max) {
                         max = sim;
                         optimalPair = appMethod;
@@ -211,25 +209,26 @@ public class PatchPresentTest_new {
                 }
                 if (patchRelatedMethod.isPre)
                     preOptimalMatchingMap.put(patchRelatedMethod, optimalPair);
-                else postOptimalMatchingMap.put(patchRelatedMethod, optimalPair);
+                else
+                    postOptimalMatchingMap.put(patchRelatedMethod, optimalPair);
             }
         }
     }
 
-
     private void computeResult(PatchSummary summary,
-                               APKAnalyzer apk) {
-//        logger.info("candidates methods are:");
-//        for (Map.Entry<MarkedMethod, Set<MarkedMethod>> entry : this.candidateMatchedMethods.entrySet()) {
-//            MarkedMethod key = entry.getKey();
-//            System.out.print(key.isPre + "\t" + key + "\t");
-//            for (MarkedMethod value : entry.getValue()) {
-//                System.out.print(value.toString() + "#" + value.sim + "#" +
-//                        value.preFineGrainSimilarity + "#" + value.postFineGrainSimilarity + "#" + "\t");
-//            }
-//            System.out.print("\n");
-//        }
-
+            APKAnalyzer apk) {
+        // logger.info("candidates methods are:");
+        // for (Map.Entry<MarkedMethod, Set<MarkedMethod>> entry :
+        // this.candidateMatchedMethods.entrySet()) {
+        // MarkedMethod key = entry.getKey();
+        // System.out.print(key.isPre + "\t" + key + "\t");
+        // for (MarkedMethod value : entry.getValue()) {
+        // System.out.print(value.toString() + "#" + value.sim + "#" +
+        // value.preFineGrainSimilarity + "#" + value.postFineGrainSimilarity + "#" +
+        // "\t");
+        // }
+        // System.out.print("\n");
+        // }
 
         // pre - mod + post - mod + mod
         int patchRelatedMethodCnt = summary.postMethodCnt + summary.preMethodCnt - summary.modifiedMethodCnt;
@@ -244,7 +243,7 @@ public class PatchPresentTest_new {
             MarkedMethod anchorMethod = entry.getKey();
             MarkedMethod appMethod = entry.getValue();
             preSimilarity += appMethod.preFineGrainSimilarity;
-//            if (config.enableDebugLevel)
+            // if (config.enableDebugLevel)
             logger.info(String.format("%s\t%s\t%f", anchorMethod, appMethod, appMethod.preFineGrainSimilarity));
         }
         if (summary.preMethodCnt != 0)
@@ -256,7 +255,7 @@ public class PatchPresentTest_new {
             MarkedMethod anchorMethod = entry.getKey();
             MarkedMethod appMethod = entry.getValue();
             postSimilarity += appMethod.postFineGrainSimilarity;
-//            if (config.enableDebugLevel)
+            // if (config.enableDebugLevel)
             logger.info(String.format("%s\t%s\t%f", anchorMethod, appMethod, appMethod.postFineGrainSimilarity));
         }
         if (summary.postMethodCnt != 0)
@@ -265,43 +264,46 @@ public class PatchPresentTest_new {
         if (preSimilarity < dynamicThreshold * summary.preMethodCnt
                 && postSimilarity < dynamicThreshold * summary.postMethodCnt) {
             logger.info(String.format("all candidate patch-related method similarity are below the threshold ," +
-                            "the patch is not present, may be the target method is deleted by the obfuscator \n" +
-                            "pre similarity=%f\tpost similarity=%f",
+                    "the patch is not present, may be the target method is deleted by the obfuscator \n" +
+                    "pre similarity=%f\tpost similarity=%f",
                     preSimilarity, postSimilarity));
             return;
         }
         if (postSimilarity > preSimilarity) {
             logger.info(String.format("the patch IS PRESENT, " +
-                            "pre similarity=%f\tpost similarity=%f",
+                    "pre similarity=%f\tpost similarity=%f",
                     preSimilarity, postSimilarity));
         } else if (postSimilarity < preSimilarity) {
             logger.info(String.format("the patch IS NOT PRESENT, " +
-                            "pre similarity=%f\tpost similarity=%f",
+                    "pre similarity=%f\tpost similarity=%f",
                     preSimilarity, postSimilarity));
         } else if (Math.abs(postSimilarity - preSimilarity) < 0.0001) {
             logger.info(String.format("the similarity for pre and post is same, that is ward ," +
-                            "pre similarity=%f\tpost similarity=%f",
+                    "pre similarity=%f\tpost similarity=%f",
                     preSimilarity, postSimilarity));
         }
-//        if (config.isEnableDebugLevel())
-//            logger.info(String.format("apk:%s\tcve:%s", apk.getAPKName(), summary.getCVENumber()));
+        // if (config.isEnableDebugLevel())
+        // logger.info(String.format("apk:%s\tcve:%s", apk.getAPKName(),
+        // summary.getCVENumber()));
     }
 
     /*
-    argue that matched method between tpl and app should have at least one common <init>
-    tpl: A <init>(B b, C c, D d)
-    app: A' <init>(B' b, C' c, D' d)
-
-    tpl: X method(Y y, Z z)
-    app: X' method(Y' y, Z' z)
-
-    things to be recovered:
-    class name, it will influence method, field
-    method name
-    field name
-
-    when computing similarity, if class or method is from java library or android library, it should be matched 100%
-    for those class or method that can not be recovered, we mark it with UNKNOW
+     * argue that matched method between tpl and app should have at least one common
+     * <init>
+     * tpl: A <init>(B b, C c, D d)
+     * app: A' <init>(B' b, C' c, D' d)
+     * 
+     * tpl: X method(Y y, Z z)
+     * app: X' method(Y' y, Z' z)
+     * 
+     * things to be recovered:
+     * class name, it will influence method, field
+     * method name
+     * field name
+     * 
+     * when computing similarity, if class or method is from java library or android
+     * library, it should be matched 100%
+     * for those class or method that can not be recovered, we mark it with UNKNOW
      */
     private Map<String, String> typeRecovery(MarkedMethod tplMethod, MarkedMethod appMethod) {
         Map<String, String> tplMapAppClass = new HashMap<>();
@@ -377,8 +379,8 @@ public class PatchPresentTest_new {
             List<String> tplVariable = tpl.realVariables.get(i);
             es.execute(new PathSimilarityThread(sim[i], tplPredicateList, tplSignature,
                     tplVariable, app, tplLastStmt));
-//            List<String> tplLibIDPath = tpl.LibIDPaths.get(i);
-//            es.execute(new LibIDThread(sim[i], tplLibIDPath, app, tplLastStmt));
+            // List<String> tplLibIDPath = tpl.LibIDPaths.get(i);
+            // es.execute(new LibIDThread(sim[i], tplLibIDPath, app, tplLastStmt));
         }
         es.shutdown();
         try {
@@ -389,7 +391,8 @@ public class PatchPresentTest_new {
             ex.printStackTrace();
         }
 
-//        return hgAlgorithm(sim, "max") / Math.max(tplPathCount,appPathCount); // set similarity
+        // return hgAlgorithm(sim, "max") / Math.max(tplPathCount,appPathCount); // set
+        // similarity
         return hgAlgorithm(sim, "max") / tplPathCount; // set similarity
     }
 
@@ -411,7 +414,7 @@ public class PatchPresentTest_new {
     }
 
     private float predicateSimilarityCompute(List<Node<PredicateNodeData>> tplList,
-                                             List<Node<PredicateNodeData>> appList) {
+            List<Node<PredicateNodeData>> appList) {
         if (tplList.isEmpty() && appList.isEmpty())
             return 1.0f;
 
@@ -428,29 +431,31 @@ public class PatchPresentTest_new {
         }
 
         float[][] predicateSim = new float[shorter.size()][longer.size()];
-//        float min = Float.MAX_VALUE;
+        // float min = Float.MAX_VALUE;
         for (int i = 0; i < shorter.size(); i++) {
             for (int j = i; j <= longer.size() - shorter.size() + i && j < longer.size(); j++) {
                 APTED<PredicateCostModel_back, PredicateNodeData> apted = new APTED<>(new PredicateCostModel_back());
                 float distance = apted.computeEditDistance_spfTest(shorter.get(i),
                         longer.get(j), 0);
-//                if (distance < min)
-//                    min = distance;
+                // if (distance < min)
+                // min = distance;
                 predicateSim[i][j] = 1 / (1 + distance / 4);
             }
         }
-//        for (int i = 0; i < shorter.size(); i++) {
-//            for (int j = i; j <= longer.size() - shorter.size() + i && j < longer.size(); j++) {
-////                predicateSim[i][j] = 1 - predicateSim[i][j] / max;
-//                predicateSim[i][j] = predicateSim[i][j] == 0 ? 1 : min / predicateSim[i][j];
-//            }
-//        }
+        // for (int i = 0; i < shorter.size(); i++) {
+        // for (int j = i; j <= longer.size() - shorter.size() + i && j < longer.size();
+        // j++) {
+        //// predicateSim[i][j] = 1 - predicateSim[i][j] / max;
+        // predicateSim[i][j] = predicateSim[i][j] == 0 ? 1 : min / predicateSim[i][j];
+        // }
+        // }
 
         CombinationSelect combinationSelect = new CombinationSelect(predicateSim,
                 shorter.size(), longer.size());
 
         predicateSim = null; // free the memory
-//        return combinationSelect.max / Math.max(appList.size(), tplList.size()); // in practice, each path in tpl should have a counterpart in app
+        // return combinationSelect.max / Math.max(appList.size(), tplList.size()); //
+        // in practice, each path in tpl should have a counterpart in app
         return combinationSelect.max / tplList.size(); // in practice, each path in tpl should have a counterpart in app
     }
 
@@ -463,8 +468,8 @@ public class PatchPresentTest_new {
         boolean[] libFlag = new boolean[tplList.size()];
         boolean[] appFlag = new boolean[appList.size()];
 
-        float mergeNum;//Number of union elements
-        float commonNum = 0;//Number of same elements
+        float mergeNum;// Number of union elements
+        float commonNum = 0;// Number of same elements
         for (int i = 0; i < tplList.size(); i++) {
             if (libFlag[i])
                 continue;
@@ -483,31 +488,31 @@ public class PatchPresentTest_new {
         return commonNum / mergeNum;
     }
 
-
-//    private float signatureOrVariableSimilarityCompute(List<String> tplList, List<String> appList) {
-//        List<String> shorter, longer;
-//        if (tplList.size() >= appList.size()) {
-//            shorter = appList;
-//            longer = tplList;
-//        } else {
-//            shorter = tplList;
-//            longer = appList;
-//        }
-//
-//        float[][] sim = new float[shorter.size()][longer.size()];
-//        float max = -1;
-//        for (int i = 0; i < shorter.size(); i++) {
-//            for (int j = i; j <= longer.size() - i && j < longer.size(); j++) {
-//                sim[i][j] = signatureSimilarity(shorter.get(i), longer.get(j));
-//            }
-//        }
-//
-//        CombinationSelect combinationSelect = new CombinationSelect(sim,
-//                shorter.size(), longer.size());
-//
-//        sim = null; // free the memory
-//        return combinationSelect.max;
-//    }
+    // private float signatureOrVariableSimilarityCompute(List<String> tplList,
+    // List<String> appList) {
+    // List<String> shorter, longer;
+    // if (tplList.size() >= appList.size()) {
+    // shorter = appList;
+    // longer = tplList;
+    // } else {
+    // shorter = tplList;
+    // longer = appList;
+    // }
+    //
+    // float[][] sim = new float[shorter.size()][longer.size()];
+    // float max = -1;
+    // for (int i = 0; i < shorter.size(); i++) {
+    // for (int j = i; j <= longer.size() - i && j < longer.size(); j++) {
+    // sim[i][j] = signatureSimilarity(shorter.get(i), longer.get(j));
+    // }
+    // }
+    //
+    // CombinationSelect combinationSelect = new CombinationSelect(sim,
+    // shorter.size(), longer.size());
+    //
+    // sim = null; // free the memory
+    // return combinationSelect.max;
+    // }
 
     private boolean isSignatureMatch(String sig1, String sig2) {
         String[] split1 = sig1.split(",");
@@ -522,7 +527,7 @@ public class PatchPresentTest_new {
     }
 
     private void doRecoveryNode(Node<PredicateNodeData> node, Map<String, String> typeRecoveryMap,
-                                Set<PredicateNodeData> accessed) {
+            Set<PredicateNodeData> accessed) {
         PredicateNodeData data = node.getNodeData();
         if (accessed.contains(data))
             return;
@@ -582,7 +587,7 @@ public class PatchPresentTest_new {
     }
 
     private void doRecovery(List<String> appSigList,
-                            Map<String, String> typeRecoveryMap) {
+            Map<String, String> typeRecoveryMap) {
         for (int i = 0; i < appSigList.size(); i++) {
             StringBuilder sb = new StringBuilder();
             String[] split = appSigList.get(i).split(",");
@@ -600,24 +605,23 @@ public class PatchPresentTest_new {
         }
     }
 
-
-//    private void report() {
-//        try {
-//            File out = new File(config.getOutputFile());
-//            FileWriter fw = new FileWriter(out);
-//            for (Map.Entry<MethodAttr, List<MethodWithSimilarity>> entry : candidateMatchedMethods.entrySet()) {
-//                MethodAttr src = entry.getKey();
-//                fw.write(src.declaredClass.name + "->" + src.signature + "\n");
-//                for (MethodWithSimilarity can : entry.getValue()) {
-//                    fw.write(can.sim + " " + can.m.declaredClass.name + "->" + can.m.signature + "#" + can.m.fuzzy + "\n");
-//                }
-//                fw.write("\n");
-//            }
-//            fw.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    // private void report() {
+    // try {
+    // File out = new File(config.getOutputFile());
+    // FileWriter fw = new FileWriter(out);
+    // for (Map.Entry<MethodAttr, List<MethodWithSimilarity>> entry :
+    // candidateMatchedMethods.entrySet()) {
+    // MethodAttr src = entry.getKey();
+    // fw.write(src.declaredClass.name + "->" + src.signature + "\n");
+    // for (MethodWithSimilarity can : entry.getValue()) {
+    // fw.write(can.sim + " " + can.m.declaredClass.name + "->" + can.m.signature +
+    // "#" + can.m.fuzzy + "\n");
+    // }
+    // fw.write("\n");
+    // }
+    // fw.close();
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+    // }
 }
-
-

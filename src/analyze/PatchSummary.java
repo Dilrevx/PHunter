@@ -10,25 +10,29 @@ import util.Patch;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+// for patch related methods from .diff
 public class PatchSummary {
     final private BinaryAnalyzer pre;
     final private BinaryAnalyzer post;
     final private Configuration config;
-    //TODO how about add a inner class?
+    // TODO how about add a inner class?
 
-//    public Map<ClassAttr, Set<MethodAttr>> modifiedClassesMapMethods = new HashMap<>();
+    // public Map<ClassAttr, Set<MethodAttr>> modifiedClassesMapMethods = new
+    // HashMap<>();
 
     // modify a method in existing class
-//    public Map<MethodAttr, Pair<List<Integer>, List<Integer>>> modifiedMethods = new HashMap<>();
+    // public Map<MethodAttr, Pair<List<Integer>, List<Integer>>> modifiedMethods =
+    // new HashMap<>();
 
     // add a method, if a new class was added, add all method from it
-//    public Set<MethodAttr> addedMethods = new HashSet<>();
-    /* remove a method in existing class, sometimes it can be ignored,
-     * even if modify a method's modifier, we only need to focus on modified an added
+    // public Set<MethodAttr> addedMethods = new HashSet<>();
+    /*
+     * remove a method in existing class, sometimes it can be ignored,
+     * even if modify a method's modifier, we only need to focus on modified an
+     * added
      * class
      */
-//    public Set<MethodAttr> removedMethods = new HashSet<>();
+    // public Set<MethodAttr> removedMethods = new HashSet<>();
 
     public Map<ClassAttr, Set<MarkedMethod>> patchRelatedMethods = new HashMap<>();
 
@@ -37,7 +41,6 @@ public class PatchSummary {
 
     public int modifiedMethodCnt = 0;
 
-
     public PatchSummary(Configuration config, BinaryAnalyzer pre, BinaryAnalyzer post) {
         this.post = post;
         this.pre = pre;
@@ -45,10 +48,9 @@ public class PatchSummary {
         Commit commit = new ParsePatchFiles(config.getPatchFiles()).commit;
         resolvePostWithDiff(commit);
         computeMethodCnt();
-//        selectPathPair(commit);
+        // selectPathPair(commit);
 
     }
-
 
     public void resolvePostWithDiff(Commit commit) {
         for (Patch patch : commit.patches) {
@@ -57,7 +59,7 @@ public class PatchSummary {
             // ignore non-java or non-kotlin file
             if (!(isJava || file.endsWith(".kt")))
                 continue;
-                // ignore test-related file
+            // ignore test-related file
             else if (file.contains("src/test") ||
                     file.contains("src/main/test") ||
                     file.contains("Test"))
@@ -68,17 +70,16 @@ public class PatchSummary {
             // patch.postFile like retrofit/src/main/java/retrofit2/RequestBuilder.java
             String postPatchFile = patch.postFile.replace('/', '.');
             String prePatchFile = patch.postFile.replace('/', '.');
-            if(isJava){ // .java
+            if (isJava) { // .java
                 postPatchFile = postPatchFile.substring(0, patch.postFile.length() - 5);
                 prePatchFile = prePatchFile.substring(0, patch.postFile.length() - 5);
-            }else { //.kotlin
+            } else { // .kotlin
                 postPatchFile = postPatchFile.substring(0, patch.postFile.length() - 3);
                 prePatchFile = prePatchFile.substring(0, patch.postFile.length() - 3);
             }
 
             for (String name : post.allClasses.keySet()) {
-                String prefixName = name.contains("$") ?
-                        name.substring(0, name.indexOf('$')) : name;
+                String prefixName = name.contains("$") ? name.substring(0, name.indexOf('$')) : name;
                 if (postPatchFile.endsWith(prefixName) && patch.isAddNewFile) {
                     Set<MarkedMethod> addedMethods = new HashSet<>();
                     patchRelatedMethods.putIfAbsent(post.allClasses.get(name), addedMethods);
@@ -159,7 +160,6 @@ public class PatchSummary {
         return false;
     }
 
-
     private boolean isGenerateClinit(MethodAttr m) {
         if (m.subSignature.contains("<clinit>")) {
             String clazz = m.declaredClass.name;
@@ -174,7 +174,6 @@ public class PatchSummary {
         ClassAttr clazz = m.declaredClass;
         return Modifier.isEnum(clazz.modifier) && m.subSignature.equals("void <clinit>()");
     }
-
 
     private void resolveAllModified(List<MarkedMethod> preModifiedMethods, List<MarkedMethod> postModifiedMethods) {
         if (!preModifiedMethods.isEmpty()) {
@@ -210,11 +209,12 @@ public class PatchSummary {
     }
 
     public void resolveModifiedMethod(List<String> clazzList, Hunk hunk,
-                                      List<MarkedMethod> modifiedMethods, boolean isPre) {
+            List<MarkedMethod> modifiedMethods, boolean isPre) {
         List<Integer> patchRelatedLines;
         if (isPre)
             patchRelatedLines = hunk.getPreAffectedLines();
-        else patchRelatedLines = hunk.getPostAffectedLines();
+        else
+            patchRelatedLines = hunk.getPostAffectedLines();
 
         // for pre
         if (!patchRelatedLines.isEmpty()) {
@@ -223,7 +223,8 @@ public class PatchSummary {
                 ClassAttr ca;
                 if (isPre)
                     ca = pre.allClasses.get(name);
-                else ca = post.allClasses.get(name);
+                else
+                    ca = post.allClasses.get(name);
                 if (!pre.allClasses.containsKey(name) || !post.allClasses.containsKey(name))
                     continue;
                 for (MethodAttr ma : ca.methods) {
@@ -237,7 +238,8 @@ public class PatchSummary {
                                     .stream()
                                     .filter(x -> ma.startLinenumber <= x && x <= ma.endLinenumber)
                                     .collect(Collectors.toList());
-                            MarkedMethod postMarkedMethod = new MarkedMethod(isPre, ma, PatchState.Modified, affectedLines);
+                            MarkedMethod postMarkedMethod = new MarkedMethod(isPre, ma, PatchState.Modified,
+                                    affectedLines);
                             patchRelatedMethods.putIfAbsent(ca, new HashSet<>());
                             patchRelatedMethods.get(ca).add(postMarkedMethod);
                             modifiedMethods.add(postMarkedMethod);
@@ -248,7 +250,8 @@ public class PatchSummary {
         }
     }
 
-    private void selectPathPair(MethodAttr postMethod, List<Integer> preAffectedLines, List<Integer> postAffectedLines) {
+    private void selectPathPair(MethodAttr postMethod, List<Integer> preAffectedLines,
+            List<Integer> postAffectedLines) {
         ClassAttr preClazz = pre.allClasses.get(postMethod.declaredClass.name);
         for (MethodAttr preMethod : preClazz.methods) {
             if (preMethod.signature.equals(postMethod.signature)) {
@@ -256,13 +259,15 @@ public class PatchSummary {
                         .stream()
                         .filter(unit -> preAffectedLines.contains(unit.getJavaSourceStartLineNumber()))
                         .collect(Collectors.toList());
-//                MethodDigest_new preMd = new MethodDigest_new(preMethod.body, prePatchRelatedUnits); // a corresponding method in pre
+                // MethodDigest_new preMd = new MethodDigest_new(preMethod.body,
+                // prePatchRelatedUnits); // a corresponding method in pre
 
                 List<Unit> postPatchRelatedUnits = postMethod.body.getUnits()
                         .stream()
                         .filter(unit -> postAffectedLines.contains(unit.getJavaSourceStartLineNumber()))
                         .collect(Collectors.toList());
-//                MethodDigest_new postMd = new MethodDigest_new(postMethod.body, postPatchRelatedUnits); // a modified method in post
+                // MethodDigest_new postMd = new MethodDigest_new(postMethod.body,
+                // postPatchRelatedUnits); // a modified method in post
 
             }
         }
@@ -358,5 +363,3 @@ public class PatchSummary {
         return config.getPatchFiles().split(";")[0].split(";")[0];
     }
 }
-
-
